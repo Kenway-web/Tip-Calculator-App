@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -31,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kenway.tipcalculatorapp.ui.theme.TipCalculatorAppTheme
+import java.text.DecimalFormat
 import java.time.temporal.TemporalAmount
 
 class MainActivity : ComponentActivity() {
@@ -38,7 +41,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             TipCalculatorAppTheme {
-                // A surface container using the 'background' color from the theme
+                MyApp()
 
             }
         }
@@ -52,7 +55,7 @@ fun MyApp()
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colors.background
     ) {
-
+            TipCalculator()
     }
 }
 
@@ -61,9 +64,42 @@ fun MyApp()
 @Composable
 fun TipCalculator()
 {
+
+    // for funtionalty , creating some state
+
+    val amount= remember {
+        mutableStateOf("")
+    }
+
+    val personCounter= remember {
+        mutableStateOf(1)
+    }
+    val tipPercentage= remember {
+        mutableStateOf(0f)
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
-        TotalHeader(amount = 1200f)
-        UserInputArea(amount = "12", amountChange = {},1,{},12f,{})
+        TotalHeader(amount = formatToDecimalPoint(
+            getTotalHeaderAmount(amount.value,
+                personCounter.value,
+                tipPercentage.value))
+        )
+        UserInputArea(amount = amount.value, amountChange = {
+                                                            amount.value=it
+        },personCounter=personCounter.value, onAddOrReducePerson = {
+                                                                   if(it<0)
+                                                                   {
+                                                                       if(personCounter.value!=1)
+                                                                       {
+                                                                           personCounter.value--
+                                                                       }
+                                                                   }
+                                                                   else{
+                                                                       personCounter.value++
+                                                                   }
+        },  tipPercentage.value,{
+            tipPercentage.value=it
+        })
 
     }
 }
@@ -72,7 +108,7 @@ fun TipCalculator()
 
 
 @Composable
-fun TotalHeader(amount: Float=0f)
+fun TotalHeader(amount: String)
 {
 
     Surface(
@@ -158,63 +194,69 @@ fun UserInputArea(amount:String,
                 })
 
             )
-            
-            Spacer(modifier = Modifier.height(4.dp))
 
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically
-            ){
-
-                Text(text = "Split", style = MaterialTheme.typography.body1)
-                Spacer(modifier = Modifier.fillMaxWidth(.50f))
-
-                CustomButton(imageVector = Icons.Default.KeyboardArrowUp) {
-                    onAddOrReducePerson.invoke(1)
-                }
-                Text(text = "${personCounter}",
-                    style = MaterialTheme.typography.body1,
-                    modifier = Modifier.
-                    padding(horizontal = 8.dp))
-
-                CustomButton(imageVector = Icons.Default.KeyboardArrowDown) {
-                    onAddOrReducePerson.invoke(-1)
-                }
-
-            }
-
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically)
+            if(amount.isNotBlank())
             {
+                Spacer(modifier = Modifier.height(4.dp))
 
-                Text(text = "Tip1",style=MaterialTheme.typography.body1)
-                Spacer(modifier = Modifier.fillMaxWidth(.70f))
-                Text(text = "1200",style=MaterialTheme.typography.body1)
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically
+                ){
+
+                    Text(text = "Split", style = MaterialTheme.typography.body1)
+                    Spacer(modifier = Modifier.fillMaxWidth(.50f))
+
+                    CustomButton(imageVector = Icons.Default.KeyboardArrowUp) {
+                        onAddOrReducePerson.invoke(1)
+                    }
+                    Text(text = "${personCounter}",
+                        style = MaterialTheme.typography.body1,
+                        modifier = Modifier.
+                        padding(horizontal = 8.dp))
+
+                    CustomButton(imageVector = Icons.Default.KeyboardArrowDown) {
+                        onAddOrReducePerson.invoke(-1)
+                    }
+
+                }
+
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically)
+                {
+
+                    Text(text = "Tip1",style=MaterialTheme.typography.body1)
+                    Spacer(modifier = Modifier.fillMaxWidth(.70f))
+                    Text(text = "$ ${formatToDecimalPoint( getTipAmount(amount,tipPercentage))}",style=MaterialTheme.typography.body1)
+
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(text = "${formatToDecimalPoint(tipPercentage.toString())} %", style = MaterialTheme.typography.body1)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Slider(value = tipPercentage, onValueChange = {
+                    tipPercentageChange.invoke(it)
+                }, valueRange = 0f..100f,
+                    steps = 5,
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .fillMaxWidth()
+                )
+
 
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
 
-            Text(text = "${tipPercentage} %", style = MaterialTheme.typography.body1)
-
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Slider(value = tipPercentage, onValueChange = {
-                tipPercentageChange.invoke(it)
-            }, valueRange = 0f..100f,
-                steps = 5,
-                modifier = Modifier
-                    .padding(horizontal = 12.dp)
-                    .fillMaxWidth()
-            )
-
-            
         }
+            
 
 
 
@@ -242,4 +284,40 @@ fun CustomButton(imageVector: ImageVector,onClick:()->Unit)
 
     }
 
+}
+
+fun getTipAmount(userAmount:String,tipPercentage: Float):String{
+    return  when{
+        userAmount.isEmpty()->{
+            "0"
+        }
+        else->{
+            val amount=userAmount.toFloat()
+            // wrapping
+            (amount*tipPercentage.div(100)).toString()
+        }
+    }
+}
+
+fun getTotalHeaderAmount(amount:String,personCounter:Int,tipPercentage: Float):String{
+        return when{
+            amount.isEmpty()->{
+                "0"
+            }
+            else->{
+                val userAmount = amount.toFloat()
+                val tipAmount=userAmount*tipPercentage.div(100)
+                val perheadAmount=(userAmount+tipAmount).div(personCounter)
+                perheadAmount.toString()
+            }
+        }
+}
+
+fun formatToDecimalPoint(str:String):String
+{
+       return if(str.isEmpty()) ""
+        else {
+            val format=DecimalFormat("################.##")
+            format.format(str.toFloat())
+        }
 }
